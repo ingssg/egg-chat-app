@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm install || true && npm run build",
-  "installCommand": "npm install || true",
+  "buildCommand": "npm install --ignore-scripts || true && rm -rf node_modules/canvas 2>/dev/null || true && npm run build",
+  "installCommand": "npm install --ignore-scripts || true && rm -rf node_modules/canvas 2>/dev/null || true",
   "framework": "nextjs"
 }
 
