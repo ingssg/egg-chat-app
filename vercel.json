@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm install --ignore-scripts && npm run build",
-  "installCommand": "npm install --ignore-scripts",
+  "buildCommand": "npm install && npm run build",
+  "installCommand": "npm install",
   "framework": "nextjs"
 }
 
