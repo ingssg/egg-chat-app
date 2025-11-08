@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import io from "socket.io-client";
 import { useRecoilState } from "recoil";
 import {
@@ -20,6 +21,10 @@ import EnterButton from "./button/EnterButton";
 import FriendButton from "./button/FriendButton";
 import NotificationButton from "./button/NotificationsButton";
 
+const DynamicUserVideo = dynamic(() => import("./UserVideo"), {
+  ssr: false,
+});
+
 interface Notification {
   _id: string;
   from: string;
@@ -37,6 +42,11 @@ const MainContent = () => {
   const [notiList, setNotiList] = useRecoilState(notiListState);
   const [chatExpanded, setChatExpanded] = useState(false);
   const [, setIsChosen] = useRecoilState(isChosenState);
+  const [isVideoOn, setIsVideoOn] = useState<boolean>(true);
+
+  const toggleCam = () => {
+    setIsVideoOn(!isVideoOn);
+  };
 
   const checkOnlineFriends = () => {
     const onlineList = sessionStorage.getItem("onlineFriends");
@@ -108,73 +118,73 @@ const MainContent = () => {
     }
   };
 
-  useEffect(() => {
-    checkNewMessageAfterLogin();
-    checkNewMessage();
-  }, [currentUser]);
+  // useEffect(() => {
+  //   checkNewMessageAfterLogin();
+  //   checkNewMessage();
+  // }, [currentUser]);
 
-  useEffect(() => {
-    setIsChosen(false); // cupid 선택 여부 false 초기화
-    updateUserInfo();
-    checkOnlineFriends();
+  // useEffect(() => {
+  //   setIsChosen(false); // cupid 선택 여부 false 초기화
+  //   updateUserInfo();
+  //   checkOnlineFriends();
 
-    const newCommonSocket = io(`${process.env.NEXT_PUBLIC_API_SERVER}/common`, {
-      transports: ["websocket"],
-      auth: { token: JSON.parse(localStorage.getItem("token")!) },
-    });
-    setCommonSocket(newCommonSocket);
+  //   const newCommonSocket = io(`${process.env.NEXT_PUBLIC_API_SERVER}/common`, {
+  //     transports: ["websocket"],
+  //     auth: { token: JSON.parse(localStorage.getItem("token")!) },
+  //   });
+  //   setCommonSocket(newCommonSocket);
 
-    newCommonSocket.on("connect", () => {
-      console.log("common connected");
-    });
+  //   newCommonSocket.on("connect", () => {
+  //     console.log("common connected");
+  //   });
 
-    newCommonSocket.emit("serverCertificate");
-    newCommonSocket.emit("friendStat");
+  //   newCommonSocket.emit("serverCertificate");
+  //   newCommonSocket.emit("friendStat");
 
-    newCommonSocket.on("newMessageNotification", (res: string) => {
-      const messageSenders = sessionStorage.getItem("messageSenders");
-      if (!messageSenders || messageSenders.length === 0) {
-        sessionStorage.setItem("messageSenders", JSON.stringify([res]));
-      } else {
-        const prevList = JSON.parse(messageSenders);
-        prevList.push(res);
-        const newList = Array.from(new Set(prevList)) as string[]; // 동일한 알람 제거
-        sessionStorage.setItem("messageSenders", JSON.stringify(newList));
-      }
-      setNewMessageSenders(prev => [...prev, res]);
-    });
+  //   newCommonSocket.on("newMessageNotification", (res: string) => {
+  //     const messageSenders = sessionStorage.getItem("messageSenders");
+  //     if (!messageSenders || messageSenders.length === 0) {
+  //       sessionStorage.setItem("messageSenders", JSON.stringify([res]));
+  //     } else {
+  //       const prevList = JSON.parse(messageSenders);
+  //       prevList.push(res);
+  //       const newList = Array.from(new Set(prevList)) as string[]; // 동일한 알람 제거
+  //       sessionStorage.setItem("messageSenders", JSON.stringify(newList));
+  //     }
+  //     setNewMessageSenders(prev => [...prev, res]);
+  //   });
 
-    newCommonSocket.emit("reqGetNotifications");
+  //   newCommonSocket.emit("reqGetNotifications");
 
-    newCommonSocket.on("resGetNotifications", (res: Notification[]) => {
-      const newNotiList = res.map((r: Notification) => {
-        return {
-          _id: r._id,
-          from: r.from,
-        };
-      });
-      setNotiList(newNotiList);
-    });
+  //   newCommonSocket.on("resGetNotifications", (res: Notification[]) => {
+  //     const newNotiList = res.map((r: Notification) => {
+  //       return {
+  //         _id: r._id,
+  //         from: r.from,
+  //       };
+  //     });
+  //     setNotiList(newNotiList);
+  //   });
 
-    newCommonSocket.on("newFriendRequest", res => {
-      const newNoti = { _id: res._id, from: res.userNickname }; // 나한테 요청 보낸 친구
-      setNotiList(prev => [...prev, newNoti]);
-    });
+  //   newCommonSocket.on("newFriendRequest", res => {
+  //     const newNoti = { _id: res._id, from: res.userNickname }; // 나한테 요청 보낸 친구
+  //     setNotiList(prev => [...prev, newNoti]);
+  //   });
 
-    newCommonSocket.on("resAcceptFriend", res => {
-      updateUserInfo();
-    });
+  //   newCommonSocket.on("resAcceptFriend", res => {
+  //     updateUserInfo();
+  //   });
 
-    newCommonSocket.on("friendRequestAccepted", res => {
-      updateUserInfo();
-    });
-  }, []);
+  //   newCommonSocket.on("friendRequestAccepted", res => {
+  //     updateUserInfo();
+  //   });
+  // }, []);
 
   return (
     <>
       <Tutorial />
-      <MainChat chatExpanded={chatExpanded} setChatExpanded={setChatExpanded} />
-      <Logout commonSocket={commonSocket} />
+      {/* <MainChat chatExpanded={chatExpanded} setChatExpanded={setChatExpanded} /> */}
+      {/* <Logout commonSocket={commonSocket} /> */}
       <div
         onClick={handleMainContentClick}
         className="h-full flex items-center justify-center min-w-[368px]"
@@ -188,7 +198,28 @@ const MainContent = () => {
                 toggleNotiList={toggleNotiList}
               />
             </div>
-            <WebcamDisplay />
+            {!isVideoOn ? (
+              <div className="w-[320px] h-[240px] rounded-xl bg-contain bg-no-repeat bg-center border-4 border-[#FAE4C9] custom-shadow md:w-[400px] md:h-[300px] top-0 overflow-hidden">
+                <DynamicUserVideo />
+              </div>
+            ) : (
+              <WebcamDisplay />
+            )}
+
+            <div className="m-4">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <span className="text-lg font-medium">
+                  아바타 {isVideoOn ? "OFF" : "ON"}
+                </span>
+                <input
+                  role="switch"
+                  type="checkbox"
+                  className="cam-input custom-shadow"
+                  onChange={toggleCam}
+                  checked={!isVideoOn}
+                />
+              </label>
+            </div>
             <EnterButton />
           </div>
         </div>

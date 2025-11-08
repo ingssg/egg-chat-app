@@ -98,7 +98,7 @@ class Avatar {
     const categories = blendshapes.categories;
     const coefsMap = new Map();
     for (let i = 0; i < categories.length; ++i) {
-      if(i <= 18 && i >= 13 || i <= 5) continue;
+      if ((i <= 18 && i >= 13) || i <= 5) continue;
       coefsMap.set(categories[i].categoryName, categories[i].score);
     }
     for (const mesh of this.morphTargetMeshes) {
@@ -119,11 +119,11 @@ class Avatar {
 const logMemoryUsage = (label: string) => {
   if ("memory" in performance) {
     const memory: any = (performance as any).memory;
-    console.log(
-      `${label} - JS Heap Size: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
-    );
+    // console.log(
+    //   `${label} - JS Heap Size: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
+    // );
   } else {
-    console.log("Memory performance API is not available in this browser.");
+    // console.log("Memory performance API is not available in this browser.");
   }
 };
 
@@ -131,9 +131,58 @@ function ARComponent() {
   const avatarName = useRecoilValue(avatarState);
   const containerRef = useRef<HTMLDivElement>(null);
   const [avatar] = useState<Avatar>(new Avatar(avatarName));
+  const [isARLoading, setIsARLoading] = useState<boolean>(true);
 
   useEffect(() => {
     logMemoryUsage("Before setup");
+
+    // 모든 비디오 요소를 즉시 숨기기
+    const hideAllVideos = () => {
+      const videos = document.querySelectorAll("video");
+      videos.forEach(video => {
+        (video as HTMLElement).style.display = "none";
+        (video as HTMLElement).style.visibility = "hidden";
+        (video as HTMLElement).style.opacity = "0";
+        (video as HTMLElement).style.position = "absolute";
+        (video as HTMLElement).style.left = "-9999px";
+      });
+    };
+
+    // MindAR 스피너 숨기기 함수
+    const hideMindarSpinners = () => {
+      const mindarLoadingElements = document.querySelectorAll(
+        "[class*='mindar'], [id*='mindar'], [class*='loading'], [id*='loading'], [class*='spinner']",
+      );
+      mindarLoadingElements.forEach((element: Element) => {
+        const htmlElement = element as HTMLElement;
+        // 스피너나 로딩 인디케이터인 경우 숨기기
+        if (
+          htmlElement.style.animation ||
+          htmlElement.classList.toString().includes("spinner") ||
+          htmlElement.classList.toString().includes("loader") ||
+          htmlElement.style.transform?.includes("rotate") ||
+          getComputedStyle(htmlElement).animation !== "none"
+        ) {
+          htmlElement.style.display = "none";
+          htmlElement.style.visibility = "hidden";
+          htmlElement.style.opacity = "0";
+        }
+      });
+    };
+
+    // MutationObserver로 새로 추가되는 비디오와 스피너도 즉시 숨기기
+    const observer = new MutationObserver(() => {
+      hideAllVideos();
+      hideMindarSpinners();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // 초기 비디오 숨기기
+    hideAllVideos();
 
     const mindarThree = new MindARThree({
       container: containerRef.current!,
@@ -150,6 +199,10 @@ function ARComponent() {
     const anchor = mindarThree.addAnchor(1);
 
     const setup = async () => {
+      // AR 시작 전까지 비디오 숨기기
+      hideAllVideos();
+      setIsARLoading(true);
+
       await avatar!.init();
       if (avatar!.gltf && avatar!.gltf.scene) {
         avatar!.gltf.scene.scale.set(2, 2, 2);
@@ -159,13 +212,36 @@ function ARComponent() {
 
       await mindarThree.start();
 
-      const video = document.querySelector("video");
-      if (!video) {
+      // AR 초기화 완료 후 로딩 종료
+      setIsARLoading(false);
+
+      // MindAR가 생성하는 로딩 스피너 숨기기
+      hideMindarSpinners();
+
+      // AR 캔버스에 rounded 적용
+      const canvas = renderer.domElement;
+      if (canvas) {
+        canvas.style.borderRadius = "0.75rem"; // rounded-xl
+        canvas.style.overflow = "hidden";
+      }
+
+      // MindAR 시작 후에도 모든 비디오 숨기기
+      hideAllVideos();
+
+      const videoAfterStart = document.querySelector("video");
+      if (!videoAfterStart) {
         console.error("비디오 없음!!!");
         return;
       }
 
-      const videoTexture = new THREE.VideoTexture(video);
+      // 비디오를 완전히 숨기기
+      (videoAfterStart as HTMLElement).style.display = "none";
+      (videoAfterStart as HTMLElement).style.visibility = "hidden";
+      (videoAfterStart as HTMLElement).style.opacity = "0";
+      (videoAfterStart as HTMLElement).style.position = "absolute";
+      (videoAfterStart as HTMLElement).style.left = "-9999px";
+
+      const videoTexture = new THREE.VideoTexture(videoAfterStart);
       videoTexture.wrapS = THREE.RepeatWrapping;
       videoTexture.repeat.x = -1; // 텍스처 좌우 반전
 
@@ -181,6 +257,12 @@ function ARComponent() {
       let frame = 0;
       // 받은 정보로 프레임마다 아바타 모양 렌더링
       renderer.setAnimationLoop(() => {
+        // 매 프레임마다 비디오 숨기기 (MindAR가 비디오를 다시 보이게 할 수 있으므로)
+        hideAllVideos();
+
+        // MindAR 로딩 스피너 지속적으로 숨기기
+        hideMindarSpinners();
+
         // 가장 최근의 추정치를 가져옴
         const estimate = mindarThree.getLatestEstimate();
         if (estimate && estimate.blendshapes) {
@@ -218,7 +300,7 @@ function ARComponent() {
 
       const video = containerRef.current?.querySelector("video");
       if (video) {
-        console.log("비디오 제거");
+        // console.log("비디오 제거");
         video.pause();
         video.srcObject = null;
       }
@@ -247,6 +329,7 @@ function ARComponent() {
     setup();
 
     return () => {
+      observer.disconnect();
       renderer.setAnimationLoop(null);
       renderer.dispose();
       scene.clear();
@@ -260,7 +343,16 @@ function ARComponent() {
 
   return (
     <>
-      <div ref={containerRef} className="relative"></div>
+      <div
+        ref={containerRef}
+        className="relative w-[320px] h-[240px] md:w-[400px] md:h-[300px]"
+      >
+        {isARLoading && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+            <div className="loader"></div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

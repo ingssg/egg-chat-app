@@ -42,6 +42,7 @@ const EnterButton = () => {
   };
 
   const handleLoadingOn = async () => {
+    alert("업데이트 예정");
     let newMeetingSocket = meetingSocket;
     if (!newMeetingSocket) {
       newMeetingSocket = (await connectSocket()) as Socket | null;

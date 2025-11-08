@@ -35,27 +35,32 @@ const WebcamDisplay = () => {
     return setIsVideoLoading(true);
   }, []);
 
-  useEffect(() => {
-    if (!isVideoLoading) {
-      loadingVideoRef.current?.classList.add("bg-[url('/img/camoff.png')]");
-    }
-  }, [isVideoLoading]);
+  // useEffect(() => {
+  //   if (!isVideoLoading) {
+  //     loadingVideoRef.current?.classList.add("bg-[url('/img/camoff.png')]");
+  //   }
+  // }, [isVideoLoading]);
 
   return (
     <>
       <div
-        className="w-[320px] h-[240px] rounded-xl bg-contain bg-no-repeat bg-center border-4 border-[#FAE4C9] custom-shadow md:w-[400px] md:h-[300px]"
+        className="w-[320px] h-[240px] rounded-xl bg-contain bg-no-repeat bg-center border-4 border-[#FAE4C9] custom-shadow md:w-[400px] md:h-[300px] relative"
         ref={loadingVideoRef}
       >
+        {isVideoLoading && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+            <div className="loader"></div>
+          </div>
+        )}
         <video
           id="myCam"
-          className="mx-auto rounded-xl"
+          className="mx-auto rounded-xl -scale-x-100"
           autoPlay
           playsInline
           ref={videoRef}
         ></video>
       </div>
-      <div className="m-4">
+      {/* <div className="m-4">
         <label className="inline-flex items-center gap-2 cursor-pointer">
           <input
             role="switch"
@@ -65,7 +70,7 @@ const WebcamDisplay = () => {
             defaultChecked={isVideoOn}
           />
         </label>
-      </div>
+      </div> */}
     </>
   );
 };
