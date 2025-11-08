@@ -25,6 +25,9 @@
     "sweetalert2": "^11.12.2",
     "yup": "^1.4.0"
   },
+  "optionalDependencies": {
+    "canvas": "^2.11.2"
+  },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",

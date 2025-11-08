@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm install || true && npm run build",
+  "installCommand": "npm install || true",
+  "framework": "nextjs"
+}
+
