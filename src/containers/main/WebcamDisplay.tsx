@@ -14,7 +14,11 @@ const WebcamDisplay = () => {
   const startWebCam = async () => {
     try {
       const constraints = {
-        video: true,
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+          aspectRatio: { ideal: 4 / 3 }, // AR 버전과 동일한 4:3 비율
+        },
         audio: false,
       };
 
@@ -54,7 +58,8 @@ const WebcamDisplay = () => {
         )}
         <video
           id="myCam"
-          className="mx-auto rounded-xl -scale-x-100"
+          className="mx-auto rounded-xl -scale-x-100 w-full h-full object-cover"
+          style={{ aspectRatio: "4/3" }}
           autoPlay
           playsInline
           ref={videoRef}
