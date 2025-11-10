@@ -191,7 +191,10 @@ const MainContent = () => {
       >
         <div className="w-full flex justify-center items-center">
           <div className="flex flex-col items-center">
-            <div className="flex justify-end w-full mb-2">
+            <p className="text-2xl text-gray-700 font-medium">
+              아래 토글 버튼으로 아바타를 씌워보세요!
+            </p>
+            <div className="w-full flex items-center justify-end mb-2">
               <NotificationButton
                 isNotiVisible={isNotiVisible}
                 notiList={notiList}
